@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -84,6 +85,7 @@ namespace TassYdm_merge_periods
         }
 
         public ObservableCollection<PeriodRule> Rules { get; } = new();
+        public ObservableCollection<SelectableDay> Days { get; } = new();
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(ConfigColour))]
@@ -138,13 +140,23 @@ namespace TassYdm_merge_periods
                 {
                     Status = $"Loading {ConfigPath}";
                     var text = await File.ReadAllTextAsync(ConfigPath);
+                    var config = JsonSerializer.Deserialize<Config>(text);
 
                     Rules.Clear();
-                    foreach (var rule in JsonSerializer.Deserialize<IEnumerable<PeriodRule>>(text))
-                    {
-                        rule.PropertyChanged += (s, a) => OnRuleChanged();
-                        Rules.Add(rule);
-                    }
+                    if (config.Rules != null)
+                        foreach (var rule in config.Rules)
+                        {
+                            rule.PropertyChanged += (s, a) => OnRuleChanged();
+                            Rules.Add(rule);
+                        }
+
+                    Days.Clear();
+                    if (config.Days != null)
+                        foreach (var day in config.Days)
+                        {
+                            day.PropertyChanged += (s, a) => OnDayChanged();
+                            Days.Add(day);
+                        }
 
                     CheckConfig();
 
@@ -203,7 +215,13 @@ namespace TassYdm_merge_periods
             {
                 Status = $"Saving {ConfigPath}";
 
-                var text = JsonSerializer.Serialize(Rules);
+                var config = new Config
+                {
+                    Rules = Rules.ToList(),
+                    Days = Days.ToList(),
+                };
+
+                var text = JsonSerializer.Serialize(config);
                 await File.WriteAllTextAsync(ConfigPath, text);
 
                 Status = $"Saved {ConfigPath}";
@@ -223,6 +241,8 @@ namespace TassYdm_merge_periods
         {
             while (Rules.Count < TtsTimetable.MaxPeriodNumber)
                 _ = AppendRule();
+            while (Days.Count < TtsTimetable.MaxDayNumber)
+                _ = AppendDay();
 
             int tassPeriod = 1;
             foreach (var rule in Rules)
@@ -245,10 +265,27 @@ namespace TassYdm_merge_periods
             return rule;
         }
 
+        SelectableDay AppendDay()
+        {
+            var day = new SelectableDay
+            {
+                DayNumber = Days.Count + 1,
+            };
+            day.PropertyChanged += (s, a) => OnDayChanged();
+            Days.Add(day);
+            ConfigChanged = true;
+            return day;
+        }
+
         void OnRuleChanged()
         {
             ConfigChanged = true;
             CheckConfig();
+        }
+
+        void OnDayChanged()
+        {
+            ConfigChanged = true;
         }
 
         [RelayCommand]
@@ -270,10 +307,22 @@ namespace TassYdm_merge_periods
                 var output = new List<string>();
                 foreach (var activity in TtsTimetable.Schedule)
                 {
-                    var rule = Rules[activity.PeriodNumber - 1];
-                    output.Add($"{activity.DayNumber},{rule.TassPeriod},{activity.YearGroup},{activity.ClassCode},{activity.RoomCode},{activity.TeacherCode}");
-                    if (rule.Duplicate)
-                        output.Add($"{activity.DayNumber},{rule.TassPeriod + 1},{activity.YearGroup},{activity.ClassCode},{activity.RoomCode},{activity.TeacherCode}");
+                    var year = activity.YearGroup;
+                    if (string.IsNullOrEmpty(year))
+                        year = "12";
+
+                    var day = Days[activity.DayNumber - 1];
+                    if (day.IsSelected)
+                    {
+                        var rule = Rules[activity.PeriodNumber - 1];
+                        output.Add($"{activity.DayNumber},{rule.TassPeriod},{year},{activity.ClassCode},{activity.RoomCode},{activity.TeacherCode}");
+                        if (rule.Duplicate)
+                            output.Add($"{activity.DayNumber},{rule.TassPeriod + 1},{year},{activity.ClassCode},{activity.RoomCode},{activity.TeacherCode}");
+                    }
+                    else
+                    {
+                        output.Add($"{activity.DayNumber},{activity.PeriodNumber},{year},{activity.ClassCode},{activity.RoomCode},{activity.TeacherCode}");
+                    }
                 }
 
                 await File.WriteAllLinesAsync(DestinationPath, output);

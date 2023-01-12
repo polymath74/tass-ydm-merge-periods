@@ -66,6 +66,26 @@
                         />
         </DockPanel>
 
+        <DockPanel DockPanel.Dock="Bottom" Margin="5,0">
+            <Label DockPanel.Dock="Left" Content="Apply to days:" VerticalAlignment="Center"/>
+            <ScrollViewer VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Hidden">
+                <ItemsControl ItemsSource="{Binding Days}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" IsItemsHost="True"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="local:SelectableDay">
+                            <CheckBox Content="{Binding DayNumber}" IsChecked="{Binding IsSelected}" 
+                                      VerticalAlignment="Center" Margin="10,2"
+                                      />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </DockPanel>
+
         <ScrollViewer VerticalScrollBarVisibility="Auto" >
             <DockPanel >
 
