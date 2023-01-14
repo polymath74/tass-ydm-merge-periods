@@ -10,5 +10,6 @@ namespace TassYdm_merge_periods
     {
         public List<PeriodRule> Rules { get; set; }
         public List<SelectableDay> Days { get; set; }
+        public string DefaultYearGroup { get; set; }
     }
 }

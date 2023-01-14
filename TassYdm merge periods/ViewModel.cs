@@ -86,6 +86,13 @@ namespace TassYdm_merge_periods
 
         public ObservableCollection<PeriodRule> Rules { get; } = new();
         public ObservableCollection<SelectableDay> Days { get; } = new();
+        [ObservableProperty]
+        string defaultYearGroup = "";
+
+        partial void OnDefaultYearGroupChanged(string value)
+        {
+            ConfigChanged = true;
+        }
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(ConfigColour))]
@@ -158,6 +165,9 @@ namespace TassYdm_merge_periods
                             Days.Add(day);
                         }
 
+                    if (config.DefaultYearGroup != null)
+                        DefaultYearGroup = config.DefaultYearGroup;
+
                     CheckConfig();
 
                     Status = $"Loaded {ConfigPath}";
@@ -219,6 +229,7 @@ namespace TassYdm_merge_periods
                 {
                     Rules = Rules.ToList(),
                     Days = Days.ToList(),
+                    DefaultYearGroup = DefaultYearGroup,
                 };
 
                 var text = JsonSerializer.Serialize(config);
@@ -257,7 +268,7 @@ namespace TassYdm_merge_periods
         {
             var rule = new PeriodRule {
                 TtsPeriod = Rules.Count + 1,
-                TassPeriod = Rules.Count > 0 ? Rules[Rules.Count - 1].TassPeriod + 1 : 1,
+                TassPeriod = Rules.Count > 0 ? Rules[^1].TassPeriod + 1 : 1,
             };
             rule.PropertyChanged += (s, a) => OnRuleChanged();
             Rules.Add(rule);
@@ -309,7 +320,7 @@ namespace TassYdm_merge_periods
                 {
                     var year = activity.YearGroup;
                     if (string.IsNullOrEmpty(year))
-                        year = "12";
+                        year = DefaultYearGroup;
 
                     var day = Days[activity.DayNumber - 1];
                     if (day.IsSelected)

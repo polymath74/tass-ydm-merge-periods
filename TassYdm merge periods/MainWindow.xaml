@@ -67,6 +67,11 @@
         </DockPanel>
 
         <DockPanel DockPanel.Dock="Bottom" Margin="5,0">
+            <Label DockPanel.Dock="Left" Content="Default year level:" VerticalAlignment="Center"/>
+            <TextBox Text="{Binding DefaultYearGroup}" Margin="5,2" VerticalAlignment="Center" Width="50" HorizontalAlignment="Left"/>
+        </DockPanel>
+
+        <DockPanel DockPanel.Dock="Bottom" Margin="5,0">
             <Label DockPanel.Dock="Left" Content="Apply to days:" VerticalAlignment="Center"/>
             <ScrollViewer VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Hidden">
                 <ItemsControl ItemsSource="{Binding Days}">
